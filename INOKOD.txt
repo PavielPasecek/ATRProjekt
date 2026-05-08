@@ -1,8 +1,13 @@
 #include <Keypad.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
-LiquidCrystal_I2C lcd(0x27,16,2);
+#include <EEPROM.h>
 
+//DISPLEEJ
+LiquidCrystal_I2C lcd(0x27,16,2);
+unsigned long DisplejPredMillis = 0;
+
+//Keypad
 const byte radky = 4;
 const byte sloupce = 4;
 char keys [radky][sloupce] = {
@@ -15,10 +20,10 @@ char keys [radky][sloupce] = {
 byte pinyRadek[radky] = {9,8,7,6};
 byte pinySloupec[sloupce] = {5,4,3,2};
 
-
-
 Keypad myKeypad = Keypad(makeKeymap(keys),pinyRadek,pinySloupec,radky,sloupce);
+String inputUzivatele;
 
+//RGB Diodka
 enum Barvy {
   CERV,
   ZEL,
@@ -30,19 +35,25 @@ byte DiodaG = 24;
 byte DiodaB = 26;
 
 
-
+//Senzory
 byte Trig1 = 28;
 byte Echo1 = 30;
 byte Trig2 = 32;
 byte Echo2 = 34;
 
-
+//stavy
 enum Stavy {
   POPLACH,
   ODEMCENO,
   ZAMCENO
 };
 
+// všechny ostatní promněnný
+Stavy momentalniStav = ZAMCENO;
+String heslo = "5555"; // 255 % 10 = 5, takze v zakladnim stavu 5555
+
+
+// Metody (funkce > metoda)
 float PrectiSenzor1() {
   digitalWrite(Trig1, LOW);
   delayMicroseconds(2);
@@ -63,6 +74,56 @@ float PrectiSenzor2() {
   return cas * 0.034 / 2; // prevede na centaky
 };
 
+void Senzory()
+{
+  float vzdalenost = PrectiSenzor1();
+  if (vzdalenost < 100)
+  {
+    
+  }
+  vzdalenost = PrectiSenzor2();
+  if (vzdalenost < 100)
+  {
+    
+  }
+}
+
+void PrectiEEPROM()
+{
+  String vypis = "";
+  vypis = (String)(EEPROM.read(0) % 10) + (String)(EEPROM.read(1) % 10) + (String)(EEPROM.read(2) % 10) +(String)(EEPROM.read(3) % 10);
+  heslo = vypis;
+}
+
+void ZapisEEPROM(String zapis)
+{
+  for (byte i = 0; i < 4; i++)
+  {
+    EEPROM.update(i,(int)zapis[i]);
+  }
+}
+
+void PrectiKeypad()
+{
+    lcd.setCursor(11,1);
+    char key = myKeypad.getKey();
+    if (key)
+    {
+        if ((key == '1') || (key == '2') ||(key == '3') || (key == '4') ||(key == '5') || (key == '6') ||(key == '7') || (key == '8') ||(key == '9'))
+        {
+            inputUzivatele = inputUzivatele + key;
+            lcd.print(inputUzivatele);
+        }
+        else if (key == 'A') // zmena hesla
+        {
+
+        }
+        else if (key == '#') // potvrzeni
+        {
+
+        }
+    }
+}
 void BarvickaNaLedce(Barvy barva)
 {
   if (barva == CERV)
@@ -74,22 +135,33 @@ void BarvickaNaLedce(Barvy barva)
   else if (barva == ZEL)
   {
     digitalWrite(DiodaR, LOW);
-    digitalWrite(DiodaG, HIGH);
+    digitalWrite(DiodaG, HIGH); // ZELENA BARVA
     digitalWrite(DiodaB, LOW);
   }
   else
   {
     digitalWrite(DiodaR, LOW);
-    digitalWrite(DiodaG, LOW);
+    digitalWrite(DiodaG, LOW); // MODRA BARVA
     digitalWrite(DiodaB, HIGH);
   }
 }
 
+void PrepisDisplej()
+{
+  unsigned long DisplejPoMillis = millis();
+  if (DisplejPoMillis - DisplejPredMillis >= 300)  // Kazdych 0.3 vterin se prepise displej
+  {
+      DisplejPredMillis = DisplejPoMillis;
+      lcd.clear();
+      lcd.setCursor(0,0);
+      lcd.println("Status:" + (String)momentalniStav);
+      //lcd.println((String)(myKeypad.getKey()));
+  }
+}
 
 void setup() {
   lcd.init();
   lcd.backlight();
-  lcd.setCursor(0,0);
   Serial.begin(9600);
 
   pinMode(Trig1, OUTPUT);
@@ -100,15 +172,13 @@ void setup() {
   pinMode(DiodaR, OUTPUT);
   pinMode(DiodaG, OUTPUT);
   pinMode(DiodaB, OUTPUT);
+
+  PrectiEEPROM();
 }
 
 void loop()
 {
-  lcd.clear();
-  lcd.setCursor(0,0);
-  lcd.println("ANO");
   BarvickaNaLedce(MOD);
-  Serial.println("Senzor 1: " + (String)PrectiSenzor1());
-  Serial.println("Senzor 2: " + (String)PrectiSenzor2());
-  Serial.println("Keypad: " + (String)(myKeypad.getKey()));
+  PrepisDisplej();
+  Serial.println("Heslo: " + (String)heslo);
 }
