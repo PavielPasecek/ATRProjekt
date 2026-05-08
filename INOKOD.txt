@@ -49,7 +49,7 @@ enum Stavy {
 };
 
 // všechny ostatní promněnný
-Stavy momentalniStav = 2;
+Stavy momentalniStav = 2; // 2 = zamčeno
 String heslo = "5555"; // 255 % 10 = 5, takze v zakladnim stavu 5555
 
 
@@ -79,12 +79,18 @@ void Senzory()
   float vzdalenost = PrectiSenzor1();
   if (vzdalenost < 100)
   {
-    POPLAAAAACH();
+    if (momentalniStav == 2)
+    {
+      POPLAAAAACH();
+    }
   }
   vzdalenost = PrectiSenzor2();
   if (vzdalenost < 100)
   {
-    POPLAAAAACH();
+    if (momentalniStav == 2)
+    {
+      POPLAAAAACH();
+    }
   }
 }
 
@@ -106,14 +112,30 @@ bool jeHesloDobre()
 {
   return (inputUzivatele == heslo);
 }
+void Zamkni()
+{
+  if (momentalniStav != 2)
+  {
+    momentalniStav = 2;
+    inputUzivatele = "";
+  }
+}
 void Vodemkni()
 {
-  momentalniStav = 0;
+  if (momentalniStav != 1)
+  {
+    momentalniStav = 1;
+    inputUzivatele = "";
+  }
 }
 
 void POPLAAAAACH()
 {
-  momentalniStav = 0;
+  if (momentalniStav != 0)
+  {
+    momentalniStav = 0;
+    inputUzivatele = "";
+  }
 }
 
 void PrectiKeypad()
@@ -127,7 +149,7 @@ void PrectiKeypad()
             if (inputUzivatele.length() < 4)
             {
               inputUzivatele = inputUzivatele + key;
-              lcd.print(inputUzivatele);
+              lcd.print(MilujuHvezdicky(inputUzivatele.length()));
             }
         }
         else if (key == 'A') // zmena hesla
@@ -138,15 +160,35 @@ void PrectiKeypad()
         {
             if (jeHesloDobre())
             {
-                inputUzivatele = "";
+                if (momentalniStav == 0)
+                {
+                  Vodemkni();
+                }
+                else if (momentalniStav == 1)
+                {
+                  Zamkni();
+                }
+                else
+                {
+                  Vodemkni();
+                }
             }
             else
             {
-                Vodemkni();
-                inputUzivatele = "";
+                POPLAAAAACH();
             }
         }
+
     }
+}
+String MilujuHvezdicky(byte delka)
+{
+  String hvezdicky = "";
+  for (byte i = 0; i < delka; i++)
+  {
+    hvezdicky = hvezdicky + "*";
+  }
+  return hvezdicky;
 }
 String StavToString()
 {
@@ -211,7 +253,7 @@ void PrepisDisplej()
       lcd.setCursor(0,1);
       lcd.print("Heslo: ");
       lcd.setCursor(11,1);
-      lcd.print(inputUzivatele);
+      lcd.print(MilujuHvezdicky(inputUzivatele.length()));
   }
 }
 
