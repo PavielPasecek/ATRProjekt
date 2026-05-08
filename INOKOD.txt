@@ -38,6 +38,7 @@ byte DiodaB = 26;
 byte ServoPin = 13;
 byte ServoOtevrene = 90;
 byte ServoZavrene = 0;
+Servo MojeServo;
 
 //Senzory
 byte Trig1 = 28;
@@ -280,15 +281,15 @@ void HandlujServo() // stejně jako ledky zapíná a vypíná servo
 {
   if (momentalniStav == 0)
   {
-    analogWrite(ServoPin,ServoZavrene);
+    MojeServo.write(ServoZavrene);
   }
   else if (momentalniStav == 1)
   {
-    analogWrite(ServoPin,ServoOtevrene);
+    MojeServo.write(ServoOtevrene);
   }
   else
   {
-    analogWrite(ServoPin,ServoZavrene);
+    MojeServo.write(ServoZavrene);
   }
 }
 void PrepisDisplej()
@@ -327,7 +328,7 @@ void setup() {
   pinMode(DiodaR, OUTPUT);
   pinMode(DiodaG, OUTPUT);
   pinMode(DiodaB, OUTPUT);
-
+  MojeServo.attach(ServoPin); // připojí servo
   PrectiEEPROM(); // načte heslo z paměti
 }
 
