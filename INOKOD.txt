@@ -51,6 +51,7 @@ enum Stavy {
 // všechny ostatní promněnný
 Stavy momentalniStav = 2; // 2 = zamčeno
 String heslo = "5555"; // 255 % 10 = 5, takze v zakladnim stavu 5555
+bool meniSeHeslo = false;
 
 
 // Metody (funkce > metoda)
@@ -105,7 +106,7 @@ void ZapisEEPROM(String zapis)
 {
   for (byte i = 0; i < 4; i++)
   {
-    EEPROM.update(i,(int)zapis[i]);
+    EEPROM.update(i,(byte)((zapis[i] - '0')));
   }
 }
 bool jeHesloDobre()
@@ -127,6 +128,14 @@ void Vodemkni()
     momentalniStav = 1;
     inputUzivatele = "";
   }
+}
+
+void UlozitHeslo()
+{
+  meniSeHeslo = false;
+  ZapisEEPROM(inputUzivatele);
+  PrectiEEPROM();
+  inputUzivatele = "";
 }
 
 void POPLAAAAACH()
@@ -154,10 +163,15 @@ void PrectiKeypad()
         }
         else if (key == 'A') // zmena hesla
         {
-
+            if (momentalniStav == 1)
+            {
+              meniSeHeslo = true;
+            }
         }
         else if (key == '#') // potvrzeni
         {
+          if (!meniSeHeslo)
+          {
             if (jeHesloDobre())
             {
                 if (momentalniStav == 0)
@@ -176,7 +190,13 @@ void PrectiKeypad()
             else
             {
                 POPLAAAAACH();
+                inputUzivatele = "";
             }
+          }
+          else
+          {
+            UlozitHeslo();
+          }
         }
 
     }
@@ -251,7 +271,14 @@ void PrepisDisplej()
       lcd.setCursor(0,0);
       lcd.print("Status:" + StavToString());
       lcd.setCursor(0,1);
-      lcd.print("Heslo: ");
+      if (!meniSeHeslo)
+      {
+        lcd.print("Heslo: ");
+      }
+      else
+      {
+        lcd.print("Nove heslo:");
+      }
       lcd.setCursor(11,1);
       lcd.print(MilujuHvezdicky(inputUzivatele.length()));
   }
