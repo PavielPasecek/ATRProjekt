@@ -243,7 +243,7 @@ void BarvickaNaLedce(Barvy barva) // vypíše správnou barvu, enum zázračně 
 {
   if (barva == CERV)
   {
-    digitalWrite(DiodaR, ((millis() % 1000) >= 500) ? HIGH : LOW);//millis to převede na číslo od 0 do 999 a zjistí, jestli je větší než 500, to znamená změna každou 0.5 vteřinu
+    digitalWrite(DiodaR, ((millis() % 1000) >= 500) ? HIGH : LOW);//millis je převeden na číslo od 0 do 999 a pak zjistí, jestli je větší než 500, to znamená změna každou 0.5 vteřinu
     digitalWrite(DiodaG, LOW);
     digitalWrite(DiodaB, LOW);
   }
