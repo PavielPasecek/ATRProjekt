@@ -2,7 +2,7 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <EEPROM.h>
-
+#include <Servo.h>
 //DISPLEEJ
 LiquidCrystal_I2C lcd(0x27,16,2);
 unsigned long DisplejPredMillis = 0;
@@ -34,6 +34,10 @@ byte DiodaR = 22;
 byte DiodaG = 24;
 byte DiodaB = 26;
 
+// Servo
+byte ServoPin = 13;
+byte ServoOtevrene = 90;
+byte ServoZavrene = 0;
 
 //Senzory
 byte Trig1 = 28;
@@ -271,6 +275,22 @@ void HandlujLedku()
     BarvickaNaLedce(MOD);
   }
 }
+
+void HandlujServo()
+{
+  if (momentalniStav == 0)
+  {
+    analogWrite(ServoPin,ServoZavrene);
+  }
+  else if (momentalniStav == 1)
+  {
+    analogWrite(ServoPin,ServoOtevrene);
+  }
+  else
+  {
+    analogWrite(ServoPin,ServoZavrene);
+  }
+}
 void PrepisDisplej()
 {
   unsigned long DisplejPoMillis = millis();
@@ -315,6 +335,7 @@ void loop()
 {
   Senzory();
   HandlujLedku();
+  HandlujServo();
   PrectiKeypad();
   PrepisDisplej();
   Serial.println(StavToString());
