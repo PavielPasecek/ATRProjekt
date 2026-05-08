@@ -65,13 +65,13 @@ float PrectiSenzor2() {
 
 void BarvickaNaLedce(Barvy barva)
 {
-  if (barva = CERV)
+  if (barva == CERV)
   {
     digitalWrite(DiodaR, HIGH); // bude blik
     digitalWrite(DiodaG, LOW);
     digitalWrite(DiodaB, LOW);
   }
-  else if (barva = ZEL)
+  else if (barva == ZEL)
   {
     digitalWrite(DiodaR, LOW);
     digitalWrite(DiodaG, HIGH);
