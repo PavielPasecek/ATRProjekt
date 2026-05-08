@@ -60,7 +60,7 @@ String heslo = "0000"; // 255 % 10 = 5, takze v zakladnim stavu 5555
 bool meniSeHeslo = false;
 
 
-// Metody (funkce > metoda)
+// Metody
 float PrectiSenzor1() {
   digitalWrite(Trig1, LOW);
   delayMicroseconds(2);
@@ -83,14 +83,14 @@ float PrectiSenzor2() {
 
 void Senzory()
 {
-  if (millis() < DelayProSenzory)
+  if (millis() < DelayProSenzory) // pokud je moc brzo, senzory jsou ignorovaný
   {
     return;
   }
   float vzdalenost = PrectiSenzor1();
-  if (vzdalenost < 100)
+  if (vzdalenost < 100) // v blízkosti 1 metr se spustí poplach
   {
-    if (momentalniStav == 2)
+    if (momentalniStav == 2) // pouze pokud je zamčeno
     {
       POPLAAAAACH();
     }
@@ -106,13 +106,13 @@ void Senzory()
 }
 void NastavDelayProSenzory(int pocetSekund)
 {
-  DelayProSenzory = (unsigned long)(millis() + pocetSekund * 1000);
+  DelayProSenzory = (unsigned long)(millis() + pocetSekund * 1000); // delay aby nefungovali ihned
 }
 void PrectiEEPROM()
 {
   String vypis = "";
   vypis = (String)(EEPROM.read(0) % 10) + (String)(EEPROM.read(1) % 10) + (String)(EEPROM.read(2) % 10) +(String)(EEPROM.read(3) % 10);
-  heslo = vypis;
+  heslo = vypis; // pokud je v bytu EEPROM číslo větší jak 9, je převedeno do čísla menšího pomocí primitivního výpočtu
 }
 
 void ZapisEEPROM(String zapis)
@@ -124,27 +124,27 @@ void ZapisEEPROM(String zapis)
 }
 bool jeHesloDobre()
 {
-  return (inputUzivatele == heslo);
+  return (inputUzivatele == heslo); // vrátí true, pokud je heslo dobře
 }
 void Zamkni()
 {
-  if (momentalniStav != 2)
+  if (momentalniStav != 2) // pokud neni zamčeno, zamkne
   {
     momentalniStav = 2;
     inputUzivatele = "";
-    NastavDelayProSenzory(5);
+    NastavDelayProSenzory(5); // delay, aby to hned nespustilo poplach
   }
 }
 void Vodemkni()
 {
-  if (momentalniStav != 1)
+  if (momentalniStav != 1) // pokud neni odemčeno, odemkne
   {
     momentalniStav = 1;
     inputUzivatele = "";
   }
 }
 
-void UlozitHeslo()
+void UlozitHeslo() // uloží heslo, pro jistotu ho znova přečte
 {
   meniSeHeslo = false;
   ZapisEEPROM(inputUzivatele);
@@ -154,7 +154,7 @@ void UlozitHeslo()
 
 void POPLAAAAACH()
 {
-  if (momentalniStav != 0)
+  if (momentalniStav != 0) // pokud už není poplach, zapne ho
   {
     momentalniStav = 0;
     inputUzivatele = "";
@@ -163,45 +163,45 @@ void POPLAAAAACH()
 
 void PrectiKeypad()
 {
-    lcd.setCursor(11,1);
+    lcd.setCursor(11,1); // nastaví kurzor do prava, aby se vešel text "Nové heslo:"
     char key = myKeypad.getKey();
     if (key)
     {
         if ((key == '1') || (key == '2') ||(key == '3') || (key == '4') ||(key == '5') || (key == '6') ||(key == '7') || (key == '8') ||(key == '9'))
         {
-            if (inputUzivatele.length() < 4)
+            if (inputUzivatele.length() < 4) // 4 znaky
             {
               inputUzivatele = inputUzivatele + key;
-              lcd.print(MilujuHvezdicky(inputUzivatele.length()));
+              lcd.print(PrevedNaHvezdicky(inputUzivatele.length())); // vypíše hvězdičky
             }
         }
         else if (key == 'A') // zmena hesla
         {
-            if (momentalniStav == 1)
+            if (momentalniStav == 1) // pokud je odemčeno, změní heslo
             {
               meniSeHeslo = true;
             }
         }
         else if (key == '#') // potvrzeni
         {
-          if (!meniSeHeslo)
+          if (!meniSeHeslo) // pokud nepotvrzuji nové heslo
           {
-            if (jeHesloDobre())
+            if (jeHesloDobre()) // když je dobře
             {
-                if (momentalniStav == 0)
+                if (momentalniStav == 0) // pokud je poplach, odemkne
                 {
                   Vodemkni();
                 }
-                else if (momentalniStav == 1)
+                else if (momentalniStav == 1) //pokud je odemčeno, zamkne
                 {
                   Zamkni();
                 }
-                else
+                else // pokud je zamčeno, odemkne
                 {
                   Vodemkni();
                 }
             }
-            else
+            else // když není dobře
             {
                 POPLAAAAACH();
                 inputUzivatele = "";
@@ -209,13 +209,13 @@ void PrectiKeypad()
           }
           else
           {
-            UlozitHeslo();
+            UlozitHeslo(); // uloží nové heslo
           }
         }
 
     }
 }
-String MilujuHvezdicky(byte delka)
+String PrevedNaHvezdicky(byte delka) // předělá počet znaků na stejný počet hvězdiček
 {
   String hvezdicky = "";
   for (byte i = 0; i < delka; i++)
@@ -224,7 +224,7 @@ String MilujuHvezdicky(byte delka)
   }
   return hvezdicky;
 }
-String StavToString()
+String StavToString() // předělá stav na string, neumim enumy
 {
   if (momentalniStav == 0)
   {
@@ -239,11 +239,11 @@ String StavToString()
     return "ZAMCENO";
   }
 }
-void BarvickaNaLedce(Barvy barva)
+void BarvickaNaLedce(Barvy barva) // vypíše správnou barvu, enum zázračně funguje
 {
   if (barva == CERV)
   {
-    digitalWrite(DiodaR, ((millis() % 1000) >= 500) ? HIGH : LOW); // bude blik
+    digitalWrite(DiodaR, ((millis() % 1000) >= 500) ? HIGH : LOW);//millis to převede na číslo od 0 do 999 a zjistí, jestli je větší než 500, to znamená změna každou 0.5 vteřinu
     digitalWrite(DiodaG, LOW);
     digitalWrite(DiodaB, LOW);
   }
@@ -260,7 +260,7 @@ void BarvickaNaLedce(Barvy barva)
     digitalWrite(DiodaB, HIGH);
   }
 }
-void HandlujLedku()
+void HandlujLedku() // jenom spravně pouští barvy, šlo to udělat i v té druhé metodě
 {
   if (momentalniStav == 0)
   {
@@ -276,7 +276,7 @@ void HandlujLedku()
   }
 }
 
-void HandlujServo()
+void HandlujServo() // stejně jako ledky zapíná a vypíná servo
 {
   if (momentalniStav == 0)
   {
@@ -298,10 +298,10 @@ void PrepisDisplej()
   {
       DisplejPredMillis = DisplejPoMillis;
       lcd.clear();
-      lcd.setCursor(0,0);
+      lcd.setCursor(0,0); // vypíše status
       lcd.print("Status:" + StavToString());
       lcd.setCursor(0,1);
-      if (!meniSeHeslo)
+      if (!meniSeHeslo) // napíše správný text podle stavu hesla
       {
         lcd.print("Heslo: ");
       }
@@ -310,7 +310,7 @@ void PrepisDisplej()
         lcd.print("Nove heslo:");
       }
       lcd.setCursor(11,1);
-      lcd.print(MilujuHvezdicky(inputUzivatele.length()));
+      lcd.print(PrevedNaHvezdicky(inputUzivatele.length()));
   }
 }
 
@@ -328,17 +328,17 @@ void setup() {
   pinMode(DiodaG, OUTPUT);
   pinMode(DiodaB, OUTPUT);
 
-  PrectiEEPROM();
+  PrectiEEPROM(); // načte heslo z paměti
 }
 
 void loop()
 {
-  Senzory();
+  Senzory(); // jenom pouští správné metody
   HandlujLedku();
   HandlujServo();
   PrectiKeypad();
   PrepisDisplej();
-  Serial.println(StavToString());
-  Serial.println("Input: " + inputUzivatele);
-  Serial.println("Heslo: " + heslo);
+  //Serial.println(StavToString());
+  //Serial.println("Input: " + inputUzivatele);
+  //Serial.println("Heslo: " + heslo);
 }
