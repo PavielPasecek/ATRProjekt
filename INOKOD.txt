@@ -1,0 +1,114 @@
+#include <Keypad.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+LiquidCrystal_I2C lcd(0x27,16,2);
+
+const byte radky = 4;
+const byte sloupce = 4;
+char keys [radky][sloupce] = {
+  {'1','2','3','A'},
+  {'4','5','6','B'},
+  {'7','8','9','C'},
+  {'*','0','#','D'}
+};
+
+byte pinyRadek[radky] = {9,8,7,6};
+byte pinySloupec[sloupce] = {5,4,3,2};
+
+
+
+Keypad myKeypad = Keypad(makeKeymap(keys),pinyRadek,pinySloupec,radky,sloupce);
+
+enum Barvy {
+  CERV,
+  ZEL,
+  MOD
+};
+
+byte DiodaR = 22;
+byte DiodaG = 24;
+byte DiodaB = 26;
+
+
+
+byte Trig1 = 28;
+byte Echo1 = 30;
+byte Trig2 = 32;
+byte Echo2 = 34;
+
+
+enum Stavy {
+  POPLACH,
+  ODEMCENO,
+  ZAMCENO
+};
+
+float PrectiSenzor1() {
+  digitalWrite(Trig1, LOW);
+  delayMicroseconds(2);
+  digitalWrite(Trig1, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(Trig1, LOW);
+  int cas = pulseIn(Echo1, HIGH);
+  return cas * 0.034 / 2; // prevede na centaky
+};
+
+float PrectiSenzor2() {
+  digitalWrite(Trig2, LOW);
+  delayMicroseconds(2);
+  digitalWrite(Trig2, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(Trig2, LOW);
+  int cas = pulseIn(Echo2, HIGH);
+  return cas * 0.034 / 2; // prevede na centaky
+};
+
+void BarvickaNaLedce(Barvy barva)
+{
+  if (barva = CERV)
+  {
+    digitalWrite(DiodaR, HIGH); // bude blik
+    digitalWrite(DiodaG, LOW);
+    digitalWrite(DiodaB, LOW);
+  }
+  else if (barva = ZEL)
+  {
+    digitalWrite(DiodaR, LOW);
+    digitalWrite(DiodaG, HIGH);
+    digitalWrite(DiodaB, LOW);
+  }
+  else
+  {
+    digitalWrite(DiodaR, LOW);
+    digitalWrite(DiodaG, LOW);
+    digitalWrite(DiodaB, HIGH);
+  }
+}
+
+
+void setup() {
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(0,0);
+  Serial.begin(9600);
+
+  pinMode(Trig1, OUTPUT);
+  pinMode(Echo1, INPUT);
+  pinMode(Trig2, OUTPUT);
+  pinMode(Echo2, INPUT);
+
+  pinMode(DiodaR, OUTPUT);
+  pinMode(DiodaG, OUTPUT);
+  pinMode(DiodaB, OUTPUT);
+}
+
+void loop()
+{
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.println("ANO");
+  BarvickaNaLedce(MOD);
+  Serial.println("Senzor 1: " + (String)PrectiSenzor1());
+  Serial.println("Senzor 2: " + (String)PrectiSenzor2());
+  Serial.println("Keypad: " + (String)(myKeypad.getKey()));
+}
