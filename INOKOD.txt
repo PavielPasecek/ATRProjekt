@@ -52,7 +52,7 @@ enum Stavy {
 
 // všechny ostatní promněnný
 Stavy momentalniStav = 2; // 2 = zamčeno
-String heslo = "5555"; // 255 % 10 = 5, takze v zakladnim stavu 5555
+String heslo = "0000"; // 255 % 10 = 5, takze v zakladnim stavu 5555
 bool meniSeHeslo = false;
 
 
@@ -79,6 +79,10 @@ float PrectiSenzor2() {
 
 void Senzory()
 {
+  if (millis() < DelayProSenzory)
+  {
+    return;
+  }
   float vzdalenost = PrectiSenzor1();
   if (vzdalenost < 100)
   {
@@ -96,7 +100,10 @@ void Senzory()
     }
   }
 }
-
+void NastavDelayProSenzory(int pocetSekund)
+{
+  DelayProSenzory = (unsigned long)(millis() + pocetSekund * 1000);
+}
 void PrectiEEPROM()
 {
   String vypis = "";
@@ -121,6 +128,7 @@ void Zamkni()
   {
     momentalniStav = 2;
     inputUzivatele = "";
+    NastavDelayProSenzory(5);
   }
 }
 void Vodemkni()
@@ -305,10 +313,10 @@ void setup() {
 
 void loop()
 {
-  HandlujLedku();
-  PrepisDisplej();
-  PrectiKeypad();
   Senzory();
+  HandlujLedku();
+  PrectiKeypad();
+  PrepisDisplej();
   Serial.println(StavToString());
   Serial.println("Input: " + inputUzivatele);
   Serial.println("Heslo: " + heslo);
