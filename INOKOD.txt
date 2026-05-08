@@ -41,6 +41,8 @@ byte Echo1 = 30;
 byte Trig2 = 32;
 byte Echo2 = 34;
 
+unsigned long DelayProSenzory = 0;
+
 //stavy
 enum Stavy {
   POPLACH,
@@ -106,7 +108,7 @@ void ZapisEEPROM(String zapis)
 {
   for (byte i = 0; i < 4; i++)
   {
-    EEPROM.update(i,(byte)((zapis[i] - '0')));
+    EEPROM.update(i,(byte)((zapis[i] - '0'))); // když odečtu ten char nuly, tak z toho udělám číslo misto ascii
   }
 }
 bool jeHesloDobre()
