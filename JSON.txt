@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "author": "Pavel Petang Paseka",
+  "author": "Pavel Paseka",
   "editor": "wokwi",
   "parts": [
     { "type": "wokwi-arduino-mega", "id": "mega", "top": 0, "left": 0, "attrs": {} },
@@ -58,6 +58,14 @@
       "left": 441.05,
       "rotate": 90,
       "attrs": { "value": "130" }
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo1",
+      "top": -41.2,
+      "left": -323.6,
+      "rotate": 180,
+      "attrs": {}
     }
   ],
   "connections": [
@@ -87,7 +95,10 @@
     [ "ultrasonic1:TRIG", "mega:28", "magenta", [ "h-19.2", "v124.4" ] ],
     [ "ultrasonic1:ECHO", "mega:30", "cyan", [ "h-9.6", "v114.4" ] ],
     [ "ultrasonic2:TRIG", "mega:32", "magenta", [ "h-144", "v-29.2" ] ],
-    [ "ultrasonic2:ECHO", "mega:34", "cyan", [ "h-144", "v8.8" ] ]
+    [ "ultrasonic2:ECHO", "mega:34", "cyan", [ "h-144", "v8.8" ] ],
+    [ "servo1:GND", "mega:GND.2", "black", [ "h67.2", "v230.4", "h249.6" ] ],
+    [ "servo1:V+", "mega:5V", "red", [ "h115.2", "v220.7", "h201.6" ] ],
+    [ "servo1:PWM", "mega:13", "green", [ "h86.4", "v-77", "h182.4" ] ]
   ],
   "dependencies": {}
 }
