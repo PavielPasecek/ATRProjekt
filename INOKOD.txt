@@ -6,6 +6,8 @@
 
 #include <PavelRGBLED.h>
 #include <PavelSonicSenzor.h>
+#include <PavelSolidniPrevodTextuNaHvezdicky.h>
+
 //DISPLEEJ
 LiquidCrystal_I2C lcd(0x27,16,2);
 unsigned long DisplejPredMillis = 0;
@@ -48,6 +50,8 @@ enum Stavy {
   ZAMCENO
 };
 
+
+PavelSolidniPrevodTextuNaHvezdicky Hvezdicky; // když nejsou parametry, je to bez závorek????
 // všechny ostatní promněnný
 Stavy momentalniStav = 2; // 2 = zamčeno
 String heslo = "0000"; // 255 % 10 = 5, takze v zakladnim stavu 5555
@@ -146,7 +150,7 @@ void PrectiKeypad()
             if (inputUzivatele.length() < 4) // 4 znaky
             {
               inputUzivatele = inputUzivatele + key;
-              lcd.print(PrevedNaHvezdicky(inputUzivatele.length())); // vypíše hvězdičky
+              lcd.print(Hvezdicky.preved(inputUzivatele.length())); // vypíše hvězdičky
             }
         }
         else if (key == 'A') // zmena hesla
@@ -189,15 +193,7 @@ void PrectiKeypad()
 
     }
 }
-String PrevedNaHvezdicky(byte delka) // předělá počet znaků na stejný počet hvězdiček
-{
-  String hvezdicky = "";
-  for (byte i = 0; i < delka; i++)
-  {
-    hvezdicky = hvezdicky + "*";
-  }
-  return hvezdicky;
-}
+
 String StavToString() // předělá stav na string, neumim enumy
 {
   if (momentalniStav == 0)
@@ -253,7 +249,7 @@ void PrepisDisplej()
         lcd.print("Nove heslo:");
       }
       lcd.setCursor(11,1);
-      lcd.print(PrevedNaHvezdicky(inputUzivatele.length()));
+      lcd.print(Hvezdicky.preved(inputUzivatele.length()));
   }
 }
 
