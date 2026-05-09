@@ -5,6 +5,7 @@
 #include <Servo.h>
 
 #include <PavelRGBLED.h>
+#include <PavelSonicSenzor.h>
 //DISPLEEJ
 LiquidCrystal_I2C lcd(0x27,16,2);
 unsigned long DisplejPredMillis = 0;
@@ -35,10 +36,8 @@ byte ServoZavrene = 0;
 Servo MojeServo;
 
 //Senzory
-byte Trig1 = 28;
-byte Echo1 = 30;
-byte Trig2 = 32;
-byte Echo2 = 34;
+PavelSonicSenzor Senzor1(28,30);
+PavelSonicSenzor Senzor2(32,34);
 
 unsigned long DelayProSenzory = 0;
 
@@ -56,33 +55,13 @@ bool meniSeHeslo = false;
 
 
 // Metody
-float PrectiSenzor1() {
-  digitalWrite(Trig1, LOW);
-  delayMicroseconds(2);
-  digitalWrite(Trig1, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(Trig1, LOW);
-  int cas = pulseIn(Echo1, HIGH);
-  return cas * 0.034 / 2; // prevede na centaky
-};
-
-float PrectiSenzor2() {
-  digitalWrite(Trig2, LOW);
-  delayMicroseconds(2);
-  digitalWrite(Trig2, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(Trig2, LOW);
-  int cas = pulseIn(Echo2, HIGH);
-  return cas * 0.034 / 2; // prevede na centaky
-};
-
 void Senzory()
 {
   if (millis() < DelayProSenzory) // pokud je moc brzo, senzory jsou ignorovaný
   {
     return;
   }
-  float vzdalenost = PrectiSenzor1();
+  float vzdalenost = Senzor1.precti();
   if (vzdalenost < 100) // v blízkosti 1 metr se spustí poplach
   {
     if (momentalniStav == 2) // pouze pokud je zamčeno
@@ -90,7 +69,7 @@ void Senzory()
       POPLAAAAACH();
     }
   }
-  vzdalenost = PrectiSenzor2();
+  vzdalenost = Senzor2.precti();
   if (vzdalenost < 100)
   {
     if (momentalniStav == 2)
@@ -283,15 +262,9 @@ void setup() {
   lcd.backlight();
   Serial.begin(9600);
 
-  pinMode(Trig1, OUTPUT);
-  pinMode(Echo1, INPUT);
-  pinMode(Trig2, OUTPUT);
-  pinMode(Echo2, INPUT);
-
-  pinMode(DiodaR, OUTPUT);
-  pinMode(DiodaG, OUTPUT);
-  pinMode(DiodaB, OUTPUT);
   MojeServo.attach(ServoPin); // připojí servo
+  Senzor1.begin();
+  Senzor2.begin();
   mojeRGBDioda.begin();
   PrectiEEPROM(); // načte heslo z paměti
 }
