@@ -3,6 +3,7 @@
 #include <LiquidCrystal_I2C.h>
 #include <EEPROM.h>
 #include <Servo.h>
+#include <SoftwareSerial.h>
 //DISPLEEJ
 LiquidCrystal_I2C lcd(0x27,16,2);
 unsigned long DisplejPredMillis = 0;
@@ -54,6 +55,10 @@ enum Stavy {
   ODEMCENO,
   ZAMCENO
 };
+
+// Bluetooth
+SoftwareSerial bluetooth(10, 11);
+unsigned long PosledniBTZprava = 0;
 
 // všechny ostatní promněnný
 Stavy momentalniStav = 2; // 2 = zamčeno
@@ -134,6 +139,7 @@ void Zamkni()
     momentalniStav = 2;
     inputUzivatele = "";
     NastavDelayProSenzory(5); // delay, aby to hned nespustilo poplach
+    lcd.clear();
   }
 }
 void Vodemkni()
@@ -142,6 +148,7 @@ void Vodemkni()
   {
     momentalniStav = 1;
     inputUzivatele = "";
+    lcd.clear();
   }
 }
 
@@ -151,6 +158,7 @@ void UlozitHeslo() // uloží heslo, pro jistotu ho znova přečte
   ZapisEEPROM(inputUzivatele);
   PrectiEEPROM();
   inputUzivatele = "";
+  lcd.clear();
 }
 
 void POPLAAAAACH()
@@ -159,6 +167,7 @@ void POPLAAAAACH()
   {
     momentalniStav = 0;
     inputUzivatele = "";
+    lcd.clear();
   }
 }
 
@@ -183,6 +192,11 @@ void PrectiKeypad()
               meniSeHeslo = true;
             }
         }
+        else if (key == '*') // reset hesla
+        {
+          inputUzivatele = "";
+          lcd.clear();
+        }
         else if (key == '#') // potvrzeni
         {
           if (!meniSeHeslo) // pokud nepotvrzuji nové heslo
@@ -206,6 +220,7 @@ void PrectiKeypad()
             {
                 POPLAAAAACH();
                 inputUzivatele = "";
+                lcd.clear();
             }
           }
           else
@@ -229,7 +244,7 @@ String StavToString() // předělá stav na string, neumim enumy
 {
   if (momentalniStav == 0)
   {
-    return "POPLACH";
+    return "POPLACH!";
   }
   else if (momentalniStav == 1)
   {
@@ -237,7 +252,7 @@ String StavToString() // předělá stav na string, neumim enumy
   }
   else
   {
-    return "ZAMCENO";
+    return "ZAMCENO ";
   }
 }
 void BarvickaNaLedce(Barvy barva) // vypíše správnou barvu, enum zázračně funguje
@@ -298,13 +313,12 @@ void PrepisDisplej()
   if (DisplejPoMillis - DisplejPredMillis >= 500)  // Kazdych 0.5 vterin se prepise displej
   {
       DisplejPredMillis = DisplejPoMillis;
-      lcd.clear();
       lcd.setCursor(0,0); // vypíše status
       lcd.print("Status:" + StavToString());
       lcd.setCursor(0,1);
       if (!meniSeHeslo) // napíše správný text podle stavu hesla
       {
-        lcd.print("Heslo: ");
+        lcd.print("Heslo:     ");
       }
       else
       {
@@ -314,7 +328,71 @@ void PrepisDisplej()
       lcd.print(PrevedNaHvezdicky(inputUzivatele.length()));
   }
 }
-
+String PrevedZpravuZMobiluNaHeslo(String Zprava)
+{
+  String vratim = "1111"; // kdyby se stalo neco spatne, vrati to tohle heslo
+  if (Zprava.length() >= 5)
+  {
+    vratim = Zprava[1] + Zprava[2] + Zprava[3]+ Zprava[4]; // seberu prvni pismenko
+    return vratim;
+  }
+}
+void CtiMobil()
+{
+    String command = bluetooth.readStringUntil('\n'); // cte do konce radku
+    command.trim(); // smaze nepotrebny znaky
+    if (command.length() > 0) 
+    {
+        if (command[0] == 'H') 
+        {
+            inputUzivatele = PrevedZpravuZMobiluNaHeslo(command);
+            if (jeHesloDobre()) // když je dobře
+            {
+                if (momentalniStav == 0) // pokud je poplach, odemkne
+                {
+                  Vodemkni();
+                }
+                else if (momentalniStav == 1) //pokud je odemčeno, zamkne
+                {
+                  Zamkni();
+                }
+                else // pokud je zamčeno, odemkne
+                {
+                  Vodemkni();
+                }
+            }
+            else // když není dobře
+            {
+                POPLAAAAACH();
+                inputUzivatele = "";
+            }
+        }
+        else if (command[0] == 'Z') 
+        {
+            if (momentalniStav == 1)
+            {
+              inputUzivatele = PrevedZpravuZMobiluNaHeslo(command);
+              UlozitHeslo(); // uloží nové heslo
+            }
+        }
+    }
+}
+void RikejMobilu()
+{
+  if (millis() - PosledniBTZprava >= 300)  // Kazdych 0.3 posle mobilu zpravu, ten čte kazdych 0.1
+  {
+      PosledniBTZprava = millis();
+      bluetooth.println((String)StavToString()[0]);
+  }
+}
+void KomunikujSMobilem()
+{
+  if (bluetooth.available() > 0) 
+  {
+    CtiMobil();
+    RikejMobilu();
+  }
+}
 void setup() {
   lcd.init();
   lcd.backlight();
@@ -328,6 +406,9 @@ void setup() {
   pinMode(DiodaR, OUTPUT);
   pinMode(DiodaG, OUTPUT);
   pinMode(DiodaB, OUTPUT);
+
+  bluetooth.begin(9600); //bluetooth begin
+
   MojeServo.attach(ServoPin); // připojí servo
   PrectiEEPROM(); // načte heslo z paměti
 }
@@ -339,6 +420,7 @@ void loop()
   HandlujServo();
   PrectiKeypad();
   PrepisDisplej();
+  KomunikujSMobilem();
   //Serial.println(StavToString());
   //Serial.println("Input: " + inputUzivatele);
   //Serial.println("Heslo: " + heslo);
