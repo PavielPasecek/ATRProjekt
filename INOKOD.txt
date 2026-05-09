@@ -3,6 +3,8 @@
 #include <LiquidCrystal_I2C.h>
 #include <EEPROM.h>
 #include <Servo.h>
+
+#include <PavelRGBLED.h>
 //DISPLEEJ
 LiquidCrystal_I2C lcd(0x27,16,2);
 unsigned long DisplejPredMillis = 0;
@@ -24,15 +26,7 @@ Keypad myKeypad = Keypad(makeKeymap(keys),pinyRadek,pinySloupec,radky,sloupce);
 String inputUzivatele;
 
 //RGB Diodka
-enum Barvy {
-  CERV,
-  ZEL,
-  MOD
-};
-
-byte DiodaR = 22;
-byte DiodaG = 24;
-byte DiodaB = 26;
+PavelRGBLED mojeRGBDioda(22,24,26);
 
 // Servo
 byte ServoPin = 13;
@@ -240,41 +234,10 @@ String StavToString() // předělá stav na string, neumim enumy
     return "ZAMCENO";
   }
 }
-void BarvickaNaLedce(Barvy barva) // vypíše správnou barvu, enum zázračně funguje
+
+void HandlujLedku() // jenom si povídá s knihovnou
 {
-  if (barva == CERV)
-  {
-    digitalWrite(DiodaR, ((millis() % 1000) >= 500) ? HIGH : LOW);//millis je převeden na číslo od 0 do 999 a pak zjistí, jestli je větší než 500, to znamená změna každou 0.5 vteřinu
-    digitalWrite(DiodaG, LOW);
-    digitalWrite(DiodaB, LOW);
-  }
-  else if (barva == ZEL)
-  {
-    digitalWrite(DiodaR, LOW);
-    digitalWrite(DiodaG, HIGH); // ZELENA BARVA
-    digitalWrite(DiodaB, LOW);
-  }
-  else
-  {
-    digitalWrite(DiodaR, LOW);
-    digitalWrite(DiodaG, LOW); // MODRA BARVA
-    digitalWrite(DiodaB, HIGH);
-  }
-}
-void HandlujLedku() // jenom spravně pouští barvy, šlo to udělat i v té druhé metodě
-{
-  if (momentalniStav == 0)
-  {
-    BarvickaNaLedce(CERV);
-  }
-  else if (momentalniStav == 1)
-  {
-    BarvickaNaLedce(ZEL);
-  }
-  else
-  {
-    BarvickaNaLedce(MOD);
-  }
+  mojeRGBDioda.rozsvit(momentalniStav);
 }
 
 void HandlujServo() // stejně jako ledky zapíná a vypíná servo
@@ -329,6 +292,7 @@ void setup() {
   pinMode(DiodaG, OUTPUT);
   pinMode(DiodaB, OUTPUT);
   MojeServo.attach(ServoPin); // připojí servo
+  mojeRGBDioda.begin();
   PrectiEEPROM(); // načte heslo z paměti
 }
 
