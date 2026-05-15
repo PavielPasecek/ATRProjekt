@@ -18,8 +18,8 @@ char keys [radky][sloupce] = {
   {'*','0','#','D'}
 };
 
-byte pinyRadek[radky] = {9,8,7,6};
-byte pinySloupec[sloupce] = {5,4,3,2};
+byte pinyRadek[radky] = {13,12,11,10};
+byte pinySloupec[sloupce] = {9,8,7,6};
 
 Keypad myKeypad = Keypad(makeKeymap(keys),pinyRadek,pinySloupec,radky,sloupce);
 String inputUzivatele;
@@ -31,21 +31,21 @@ enum Barvy {
   MOD
 };
 
-byte DiodaR = 22;
-byte DiodaG = 24;
-byte DiodaB = 26;
+byte DiodaR = 52;
+byte DiodaG = 53;
+byte DiodaB = 49;
 
 // Servo
-byte ServoPin = 13;
+byte ServoPin = 3;
 byte ServoOtevrene = 90;
 byte ServoZavrene = 0;
 Servo MojeServo;
 
 //Senzory
-byte Trig1 = 28;
-byte Echo1 = 30;
-byte Trig2 = 32;
-byte Echo2 = 34;
+byte Trig1 = 25;
+byte Echo1 = 24;
+byte Trig2 = 30;
+byte Echo2 = 31;
 
 unsigned long DelayProSenzory = 0;
 
@@ -57,7 +57,7 @@ enum Stavy {
 };
 
 // Bluetooth
-SoftwareSerial bluetooth(10, 11);
+SoftwareSerial bluetooth(5, 4);
 unsigned long PosledniBTZprava = 0;
 
 // všechny ostatní promněnný
@@ -73,7 +73,7 @@ float PrectiSenzor1() {
   digitalWrite(Trig1, HIGH);
   delayMicroseconds(10);
   digitalWrite(Trig1, LOW);
-  int cas = pulseIn(Echo1, HIGH);
+  int cas = pulseIn(Echo1, HIGH,25000);
   return cas * 0.034 / 2; // prevede na centaky
 };
 
@@ -83,7 +83,7 @@ float PrectiSenzor2() {
   digitalWrite(Trig2, HIGH);
   delayMicroseconds(10);
   digitalWrite(Trig2, LOW);
-  int cas = pulseIn(Echo2, HIGH);
+  int cas = pulseIn(Echo2, HIGH,25000);
   return cas * 0.034 / 2; // prevede na centaky
 };
 
