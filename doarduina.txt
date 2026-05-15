@@ -125,7 +125,7 @@ void ZapisEEPROM(String zapis)
 {
   for (byte i = 0; i < 4; i++)
   {
-    EEPROM.update(i,(byte)((zapis[i] - '0'))); // když odečtu ten char nuly, tak z toho udělám číslo misto ascii
+    EEPROM.update(i,(byte)((zapis[i] - '0'))); // když odečtu ten char nuly, tak z toho udělám číslo misto ascii OD AIIIII
   }
 }
 bool jeHesloDobre()
@@ -330,53 +330,58 @@ void PrepisDisplej()
 }
 String PrevedZpravuZMobiluNaHeslo(String Zprava)
 {
-  String vratim = "1111"; // kdyby se stalo neco spatne, vrati to tohle heslo
-  if (Zprava.length() >= 5)
-  {
-    vratim = Zprava[1] + Zprava[2] + Zprava[3]+ Zprava[4]; // seberu prvni pismenko
-    return vratim;
-  }
+  if (Zprava.length() < 5) return "1111";
+
+  String vratim = "";
+  vratim += Zprava[1];
+  vratim += Zprava[2];
+  vratim += Zprava[3];
+  vratim += Zprava[4];
+
+  return vratim;
 }
+
 void CtiMobil()
 {
-    String command = bluetooth.readStringUntil('\n'); // cte do konce radku
-    command.trim(); // smaze nepotrebny znaky
-    if (command.length() > 0) 
+    /*if (bluetooth.available() == 0) {
+        return; // nic nepřišlo → okamžitě skonči
+    }
+
+    String command = bluetooth.readStringUntil('\n');
+    command.trim();
+
+    if (command.length() == 0) return;
+
+    Serial.println(command);
+
+    if (command[0] == 'H') 
     {
-        if (command[0] == 'H') 
+        inputUzivatele = PrevedZpravuZMobiluNaHeslo(command);
+
+        if (jeHesloDobre()) 
         {
-            inputUzivatele = PrevedZpravuZMobiluNaHeslo(command);
-            if (jeHesloDobre()) // když je dobře
-            {
-                if (momentalniStav == 0) // pokud je poplach, odemkne
-                {
-                  Vodemkni();
-                }
-                else if (momentalniStav == 1) //pokud je odemčeno, zamkne
-                {
-                  Zamkni();
-                }
-                else // pokud je zamčeno, odemkne
-                {
-                  Vodemkni();
-                }
-            }
-            else // když není dobře
-            {
-                POPLAAAAACH();
-                inputUzivatele = "";
-            }
+            if (momentalniStav == 0) Vodemkni();
+            else if (momentalniStav == 1) Zamkni();
+            else Vodemkni();
         }
-        else if (command[0] == 'Z') 
+        else 
         {
-            if (momentalniStav == 1)
-            {
-              inputUzivatele = PrevedZpravuZMobiluNaHeslo(command);
-              UlozitHeslo(); // uloží nové heslo
-            }
+            POPLAAAAACH();
+            inputUzivatele = "";
         }
     }
+    else if (command[0] == 'Z') 
+    {
+        if (momentalniStav == 1)
+        {
+            inputUzivatele = PrevedZpravuZMobiluNaHeslo(command);
+            UlozitHeslo();
+        }
+    }*/
+    char c = bluetooth.read();
+    Serial.print(c);   // vypíše přesně to, co přišlo
 }
+
 void RikejMobilu()
 {
   if (millis() - PosledniBTZprava >= 300)  // Kazdych 0.3 posle mobilu zpravu, ten čte kazdych 0.1
@@ -387,11 +392,8 @@ void RikejMobilu()
 }
 void KomunikujSMobilem()
 {
-  if (bluetooth.available() > 0) 
-  {
     CtiMobil();
     RikejMobilu();
-  }
 }
 void setup() {
   lcd.init();
