@@ -1,0 +1,427 @@
+#include <Keypad.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <EEPROM.h>
+#include <Servo.h>
+#include <SoftwareSerial.h>
+//DISPLEEJ
+LiquidCrystal_I2C lcd(0x27,16,2);
+unsigned long DisplejPredMillis = 0;
+
+//Keypad
+const byte radky = 4;
+const byte sloupce = 4;
+char keys [radky][sloupce] = {
+  {'1','2','3','A'},
+  {'4','5','6','B'},
+  {'7','8','9','C'},
+  {'*','0','#','D'}
+};
+
+byte pinyRadek[radky] = {9,8,7,6};
+byte pinySloupec[sloupce] = {5,4,3,2};
+
+Keypad myKeypad = Keypad(makeKeymap(keys),pinyRadek,pinySloupec,radky,sloupce);
+String inputUzivatele;
+
+//RGB Diodka
+enum Barvy {
+  CERV,
+  ZEL,
+  MOD
+};
+
+byte DiodaR = 22;
+byte DiodaG = 24;
+byte DiodaB = 26;
+
+// Servo
+byte ServoPin = 13;
+byte ServoOtevrene = 90;
+byte ServoZavrene = 0;
+Servo MojeServo;
+
+//Senzory
+byte Trig1 = 28;
+byte Echo1 = 30;
+byte Trig2 = 32;
+byte Echo2 = 34;
+
+unsigned long DelayProSenzory = 0;
+
+//stavy
+enum Stavy {
+  POPLACH,
+  ODEMCENO,
+  ZAMCENO
+};
+
+// Bluetooth
+SoftwareSerial bluetooth(10, 11);
+unsigned long PosledniBTZprava = 0;
+
+// všechny ostatní promněnný
+Stavy momentalniStav = 2; // 2 = zamčeno
+String heslo = "0000"; // 255 % 10 = 5, takze v zakladnim stavu 5555
+bool meniSeHeslo = false;
+
+
+// Metody
+float PrectiSenzor1() {
+  digitalWrite(Trig1, LOW);
+  delayMicroseconds(2);
+  digitalWrite(Trig1, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(Trig1, LOW);
+  int cas = pulseIn(Echo1, HIGH);
+  return cas * 0.034 / 2; // prevede na centaky
+};
+
+float PrectiSenzor2() {
+  digitalWrite(Trig2, LOW);
+  delayMicroseconds(2);
+  digitalWrite(Trig2, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(Trig2, LOW);
+  int cas = pulseIn(Echo2, HIGH);
+  return cas * 0.034 / 2; // prevede na centaky
+};
+
+void Senzory()
+{
+  if (millis() < DelayProSenzory) // pokud je moc brzo, senzory jsou ignorovaný
+  {
+    return;
+  }
+  float vzdalenost = PrectiSenzor1();
+  if (vzdalenost < 100) // v blízkosti 1 metr se spustí poplach
+  {
+    if (momentalniStav == 2) // pouze pokud je zamčeno
+    {
+      POPLAAAAACH();
+    }
+  }
+  vzdalenost = PrectiSenzor2();
+  if (vzdalenost < 100)
+  {
+    if (momentalniStav == 2)
+    {
+      POPLAAAAACH();
+    }
+  }
+}
+void NastavDelayProSenzory(int pocetSekund)
+{
+  DelayProSenzory = (unsigned long)(millis() + pocetSekund * 1000); // delay aby nefungovali ihned
+}
+void PrectiEEPROM()
+{
+  String vypis = "";
+  vypis = (String)(EEPROM.read(0) % 10) + (String)(EEPROM.read(1) % 10) + (String)(EEPROM.read(2) % 10) +(String)(EEPROM.read(3) % 10);
+  heslo = vypis; // pokud je v bytu EEPROM číslo větší jak 9, je převedeno do čísla menšího pomocí primitivního výpočtu
+}
+
+void ZapisEEPROM(String zapis)
+{
+  for (byte i = 0; i < 4; i++)
+  {
+    EEPROM.update(i,(byte)((zapis[i] - '0'))); // když odečtu ten char nuly, tak z toho udělám číslo misto ascii
+  }
+}
+bool jeHesloDobre()
+{
+  return (inputUzivatele == heslo); // vrátí true, pokud je heslo dobře
+}
+void Zamkni()
+{
+  if (momentalniStav != 2) // pokud neni zamčeno, zamkne
+  {
+    momentalniStav = 2;
+    inputUzivatele = "";
+    NastavDelayProSenzory(5); // delay, aby to hned nespustilo poplach
+    lcd.clear();
+  }
+}
+void Vodemkni()
+{
+  if (momentalniStav != 1) // pokud neni odemčeno, odemkne
+  {
+    momentalniStav = 1;
+    inputUzivatele = "";
+    lcd.clear();
+  }
+}
+
+void UlozitHeslo() // uloží heslo, pro jistotu ho znova přečte
+{
+  meniSeHeslo = false;
+  ZapisEEPROM(inputUzivatele);
+  PrectiEEPROM();
+  inputUzivatele = "";
+  lcd.clear();
+}
+
+void POPLAAAAACH()
+{
+  if (momentalniStav != 0) // pokud už není poplach, zapne ho
+  {
+    momentalniStav = 0;
+    inputUzivatele = "";
+    lcd.clear();
+  }
+}
+
+void PrectiKeypad()
+{
+    lcd.setCursor(11,1); // nastaví kurzor do prava, aby se vešel text "Nové heslo:"
+    char key = myKeypad.getKey();
+    if (key)
+    {
+        if ((key == '1') || (key == '2') ||(key == '3') || (key == '4') ||(key == '5') || (key == '6') ||(key == '7') || (key == '8') ||(key == '9'))
+        {
+            if (inputUzivatele.length() < 4) // 4 znaky
+            {
+              inputUzivatele = inputUzivatele + key;
+              lcd.print(PrevedNaHvezdicky(inputUzivatele.length())); // vypíše hvězdičky
+            }
+        }
+        else if (key == 'A') // zmena hesla
+        {
+            if (momentalniStav == 1) // pokud je odemčeno, změní heslo
+            {
+              meniSeHeslo = true;
+            }
+        }
+        else if (key == '*') // reset hesla
+        {
+          inputUzivatele = "";
+          lcd.clear();
+        }
+        else if (key == '#') // potvrzeni
+        {
+          if (!meniSeHeslo) // pokud nepotvrzuji nové heslo
+          {
+            if (jeHesloDobre()) // když je dobře
+            {
+                if (momentalniStav == 0) // pokud je poplach, odemkne
+                {
+                  Vodemkni();
+                }
+                else if (momentalniStav == 1) //pokud je odemčeno, zamkne
+                {
+                  Zamkni();
+                }
+                else // pokud je zamčeno, odemkne
+                {
+                  Vodemkni();
+                }
+            }
+            else // když není dobře
+            {
+                POPLAAAAACH();
+                inputUzivatele = "";
+                lcd.clear();
+            }
+          }
+          else
+          {
+            UlozitHeslo(); // uloží nové heslo
+          }
+        }
+
+    }
+}
+String PrevedNaHvezdicky(byte delka) // předělá počet znaků na stejný počet hvězdiček
+{
+  String hvezdicky = "";
+  for (byte i = 0; i < delka; i++)
+  {
+    hvezdicky = hvezdicky + "*";
+  }
+  return hvezdicky;
+}
+String StavToString() // předělá stav na string, neumim enumy
+{
+  if (momentalniStav == 0)
+  {
+    return "POPLACH!";
+  }
+  else if (momentalniStav == 1)
+  {
+    return "ODEMCENO";
+  }
+  else
+  {
+    return "ZAMCENO ";
+  }
+}
+void BarvickaNaLedce(Barvy barva) // vypíše správnou barvu, enum zázračně funguje
+{
+  if (barva == CERV)
+  {
+    digitalWrite(DiodaR, ((millis() % 1000) >= 500) ? HIGH : LOW);//millis je převeden na číslo od 0 do 999 a pak zjistí, jestli je větší než 500, to znamená změna každou 0.5 vteřinu
+    digitalWrite(DiodaG, LOW);
+    digitalWrite(DiodaB, LOW);
+  }
+  else if (barva == ZEL)
+  {
+    digitalWrite(DiodaR, LOW);
+    digitalWrite(DiodaG, HIGH); // ZELENA BARVA
+    digitalWrite(DiodaB, LOW);
+  }
+  else
+  {
+    digitalWrite(DiodaR, LOW);
+    digitalWrite(DiodaG, LOW); // MODRA BARVA
+    digitalWrite(DiodaB, HIGH);
+  }
+}
+void HandlujLedku() // jenom spravně pouští barvy, šlo to udělat i v té druhé metodě
+{
+  if (momentalniStav == 0)
+  {
+    BarvickaNaLedce(CERV);
+  }
+  else if (momentalniStav == 1)
+  {
+    BarvickaNaLedce(ZEL);
+  }
+  else
+  {
+    BarvickaNaLedce(MOD);
+  }
+}
+
+void HandlujServo() // stejně jako ledky zapíná a vypíná servo
+{
+  if (momentalniStav == 0)
+  {
+    MojeServo.write(ServoZavrene);
+  }
+  else if (momentalniStav == 1)
+  {
+    MojeServo.write(ServoOtevrene);
+  }
+  else
+  {
+    MojeServo.write(ServoZavrene);
+  }
+}
+void PrepisDisplej()
+{
+  unsigned long DisplejPoMillis = millis();
+  if (DisplejPoMillis - DisplejPredMillis >= 500)  // Kazdych 0.5 vterin se prepise displej
+  {
+      DisplejPredMillis = DisplejPoMillis;
+      lcd.setCursor(0,0); // vypíše status
+      lcd.print("Status:" + StavToString());
+      lcd.setCursor(0,1);
+      if (!meniSeHeslo) // napíše správný text podle stavu hesla
+      {
+        lcd.print("Heslo:     ");
+      }
+      else
+      {
+        lcd.print("Nove heslo:");
+      }
+      lcd.setCursor(11,1);
+      lcd.print(PrevedNaHvezdicky(inputUzivatele.length()));
+  }
+}
+String PrevedZpravuZMobiluNaHeslo(String Zprava)
+{
+  String vratim = "1111"; // kdyby se stalo neco spatne, vrati to tohle heslo
+  if (Zprava.length() >= 5)
+  {
+    vratim = Zprava[1] + Zprava[2] + Zprava[3]+ Zprava[4]; // seberu prvni pismenko
+    return vratim;
+  }
+}
+void CtiMobil()
+{
+    String command = bluetooth.readStringUntil('\n'); // cte do konce radku
+    command.trim(); // smaze nepotrebny znaky
+    if (command.length() > 0) 
+    {
+        if (command[0] == 'H') 
+        {
+            inputUzivatele = PrevedZpravuZMobiluNaHeslo(command);
+            if (jeHesloDobre()) // když je dobře
+            {
+                if (momentalniStav == 0) // pokud je poplach, odemkne
+                {
+                  Vodemkni();
+                }
+                else if (momentalniStav == 1) //pokud je odemčeno, zamkne
+                {
+                  Zamkni();
+                }
+                else // pokud je zamčeno, odemkne
+                {
+                  Vodemkni();
+                }
+            }
+            else // když není dobře
+            {
+                POPLAAAAACH();
+                inputUzivatele = "";
+            }
+        }
+        else if (command[0] == 'Z') 
+        {
+            if (momentalniStav == 1)
+            {
+              inputUzivatele = PrevedZpravuZMobiluNaHeslo(command);
+              UlozitHeslo(); // uloží nové heslo
+            }
+        }
+    }
+}
+void RikejMobilu()
+{
+  if (millis() - PosledniBTZprava >= 300)  // Kazdych 0.3 posle mobilu zpravu, ten čte kazdych 0.1
+  {
+      PosledniBTZprava = millis();
+      bluetooth.println((String)StavToString()[0]);
+  }
+}
+void KomunikujSMobilem()
+{
+  if (bluetooth.available() > 0) 
+  {
+    CtiMobil();
+    RikejMobilu();
+  }
+}
+void setup() {
+  lcd.init();
+  lcd.backlight();
+  Serial.begin(9600);
+
+  pinMode(Trig1, OUTPUT);
+  pinMode(Echo1, INPUT);
+  pinMode(Trig2, OUTPUT);
+  pinMode(Echo2, INPUT);
+
+  pinMode(DiodaR, OUTPUT);
+  pinMode(DiodaG, OUTPUT);
+  pinMode(DiodaB, OUTPUT);
+
+  bluetooth.begin(9600); //bluetooth begin
+
+  MojeServo.attach(ServoPin); // připojí servo
+  PrectiEEPROM(); // načte heslo z paměti
+}
+
+void loop()
+{
+  Senzory(); // jenom pouští správné metody
+  HandlujLedku();
+  HandlujServo();
+  PrectiKeypad();
+  PrepisDisplej();
+  KomunikujSMobilem();
+  //Serial.println(StavToString());
+  //Serial.println("Input: " + inputUzivatele);
+  //Serial.println("Heslo: " + heslo);
+}
