@@ -154,11 +154,14 @@ void Vodemkni()
 
 void UlozitHeslo() // uloží heslo, pro jistotu ho znova přečte
 {
-  meniSeHeslo = false;
-  ZapisEEPROM(inputUzivatele);
-  PrectiEEPROM();
-  inputUzivatele = "";
-  lcd.clear();
+  if (inputUzivatele.length() == 4)
+  {
+      meniSeHeslo = false;
+      ZapisEEPROM(inputUzivatele);
+      PrectiEEPROM();
+      inputUzivatele = "";
+      lcd.clear();
+  }
 }
 
 void POPLAAAAACH()
