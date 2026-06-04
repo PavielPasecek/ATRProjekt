@@ -343,8 +343,8 @@ String PrevedZpravuZMobiluNaHeslo(String Zprava)
 
 void CtiMobil()
 {
-    /*if (bluetooth.available() == 0) {
-        return; // nic nepřišlo → okamžitě skonči
+    if (bluetooth.available() == 0) {
+        return;
     }
 
     String command = bluetooth.readStringUntil('\n');
@@ -354,21 +354,13 @@ void CtiMobil()
 
     Serial.println(command);
 
-    if (command[0] == 'H') 
+    if (command[0] == 'O') 
     {
-        inputUzivatele = PrevedZpravuZMobiluNaHeslo(command);
-
-        if (jeHesloDobre()) 
-        {
-            if (momentalniStav == 0) Vodemkni();
-            else if (momentalniStav == 1) Zamkni();
-            else Vodemkni();
-        }
-        else 
-        {
-            POPLAAAAACH();
-            inputUzivatele = "";
-        }
+        Vodemkni()
+    }
+    else if (command[0] == 'L') 
+    {
+        Zamnkni();
     }
     else if (command[0] == 'Z') 
     {
@@ -377,7 +369,7 @@ void CtiMobil()
             inputUzivatele = PrevedZpravuZMobiluNaHeslo(command);
             UlozitHeslo();
         }
-    }*/
+    }
     char c = bluetooth.read();
     Serial.print(c);   // vypíše přesně to, co přišlo
 }
