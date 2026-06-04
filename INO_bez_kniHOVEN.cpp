@@ -353,15 +353,15 @@ void CtiMobil()
 
     Serial.println(command);
 
-    if (command[0] == 'O') 
+    if (command[0] == 'O') // odemkni
     {
         Vodemkni()
     }
-    else if (command[0] == 'L') 
+    else if (command[0] == 'L') // lock zamkny
     {
         Zamnkni();
     }
-    else if (command[0] == 'Z') 
+    else if (command[0] == 'Z') // zmena hesla
     {
         if (momentalniStav == 1)
         {
