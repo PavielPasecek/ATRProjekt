@@ -342,41 +342,31 @@ String PrevedZpravuZMobiluNaHeslo(String Zprava)
 }
 void CtiMobil()
 {
-    String command = bluetooth.readStringUntil('\n'); // cte do konce radku
-    command.trim(); // smaze nepotrebny znaky
-    if (command.length() > 0) 
+    if (bluetooth.available() == 0) {
+        return;
+    }
+
+    String command = bluetooth.readStringUntil('\n');
+    command.trim();
+
+    if (command.length() == 0) return;
+
+    Serial.println(command);
+
+    if (command[0] == 'O') 
     {
-        if (command[0] == 'H') 
+        Vodemkni()
+    }
+    else if (command[0] == 'L') 
+    {
+        Zamnkni();
+    }
+    else if (command[0] == 'Z') 
+    {
+        if (momentalniStav == 1)
         {
             inputUzivatele = PrevedZpravuZMobiluNaHeslo(command);
-            if (jeHesloDobre()) // když je dobře
-            {
-                if (momentalniStav == 0) // pokud je poplach, odemkne
-                {
-                  Vodemkni();
-                }
-                else if (momentalniStav == 1) //pokud je odemčeno, zamkne
-                {
-                  Zamkni();
-                }
-                else // pokud je zamčeno, odemkne
-                {
-                  Vodemkni();
-                }
-            }
-            else // když není dobře
-            {
-                POPLAAAAACH();
-                inputUzivatele = "";
-            }
-        }
-        else if (command[0] == 'Z') 
-        {
-            if (momentalniStav == 1)
-            {
-              inputUzivatele = PrevedZpravuZMobiluNaHeslo(command);
-              UlozitHeslo(); // uloží nové heslo
-            }
+            UlozitHeslo();
         }
     }
 }
