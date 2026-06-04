@@ -370,8 +370,6 @@ void CtiMobil()
             UlozitHeslo();
         }
     }
-    char c = bluetooth.read();
-    Serial.print(c);   // vypíše přesně to, co přišlo
 }
 
 void RikejMobilu()
