@@ -31,21 +31,21 @@ enum Barvy {
   MOD
 };
 
-byte DiodaR = 52;
-byte DiodaG = 53;
-byte DiodaB = 49;
+byte DiodaR = 22;
+byte DiodaG = 24;
+byte DiodaB = 26;
 
 // Servo
-byte ServoPin = 3;
+byte ServoPin = 15;
 byte ServoOtevrene = 90;
 byte ServoZavrene = 0;
 Servo MojeServo;
 
 //Senzory
-byte Trig1 = 25;
-byte Echo1 = 24;
-byte Trig2 = 30;
-byte Echo2 = 31;
+byte Trig1 = 28;
+byte Echo1 = 30;
+byte Trig2 = 32;
+byte Echo2 = 34;
 
 unsigned long DelayProSenzory = 0;
 
@@ -73,7 +73,7 @@ float PrectiSenzor1() {
   digitalWrite(Trig1, HIGH);
   delayMicroseconds(10);
   digitalWrite(Trig1, LOW);
-  int cas = pulseIn(Echo1, HIGH,25000);
+  int cas = pulseIn(Echo1, HIGH);
   return cas * 0.034 / 2; // prevede na centaky
 };
 
@@ -83,7 +83,7 @@ float PrectiSenzor2() {
   digitalWrite(Trig2, HIGH);
   delayMicroseconds(10);
   digitalWrite(Trig2, LOW);
-  int cas = pulseIn(Echo2, HIGH,25000);
+  int cas = pulseIn(Echo2, HIGH);
   return cas * 0.034 / 2; // prevede na centaky
 };
 
@@ -125,7 +125,7 @@ void ZapisEEPROM(String zapis)
 {
   for (byte i = 0; i < 4; i++)
   {
-    EEPROM.update(i,(byte)((zapis[i] - '0'))); // když odečtu ten char nuly, tak z toho udělám číslo misto ascii OD AIIIII
+    EEPROM.update(i,(byte)((zapis[i] - '0'))); // když odečtu ten char nuly, tak z toho udělám číslo misto ascii
   }
 }
 bool jeHesloDobre()
@@ -154,11 +154,14 @@ void Vodemkni()
 
 void UlozitHeslo() // uloží heslo, pro jistotu ho znova přečte
 {
-  meniSeHeslo = false;
-  ZapisEEPROM(inputUzivatele);
-  PrectiEEPROM();
-  inputUzivatele = "";
-  lcd.clear();
+  if (inputUzivatele.length() == 4)
+  {
+      meniSeHeslo = false;
+      ZapisEEPROM(inputUzivatele);
+      PrectiEEPROM();
+      inputUzivatele = "";
+      lcd.clear();
+  }
 }
 
 void POPLAAAAACH()
@@ -330,17 +333,13 @@ void PrepisDisplej()
 }
 String PrevedZpravuZMobiluNaHeslo(String Zprava)
 {
-  if (Zprava.length() < 5) return "1111";
-
-  String vratim = "";
-  vratim += Zprava[1];
-  vratim += Zprava[2];
-  vratim += Zprava[3];
-  vratim += Zprava[4];
-
-  return vratim;
+  String vratim = "1111"; // kdyby se stalo neco spatne, vrati to tohle heslo
+  if (Zprava.length() >= 5)
+  {
+    vratim = Zprava[1] + Zprava[2] + Zprava[3]+ Zprava[4]; // seberu prvni pismenko
+    return vratim;
+  }
 }
-
 void CtiMobil()
 {
     if (bluetooth.available() == 0) {
@@ -354,15 +353,15 @@ void CtiMobil()
 
     Serial.println(command);
 
-    if (command[0] == 'O') 
+    if (command[0] == 'O') // odemkni
     {
-        Vodemkni()
+        Vodemkni();
     }
-    else if (command[0] == 'L') 
+    else if (command[0] == 'L') // lock zamkny
     {
-        Zamnkni();
+        Zamkni();
     }
-    else if (command[0] == 'Z') 
+    else if (command[0] == 'Z') // zmena hesla
     {
         if (momentalniStav == 1)
         {
@@ -371,7 +370,6 @@ void CtiMobil()
         }
     }
 }
-
 void RikejMobilu()
 {
   if (millis() - PosledniBTZprava >= 300)  // Kazdych 0.3 posle mobilu zpravu, ten čte kazdych 0.1
@@ -382,8 +380,11 @@ void RikejMobilu()
 }
 void KomunikujSMobilem()
 {
+  if (bluetooth.available() > 0) 
+  {
     CtiMobil();
     RikejMobilu();
+  }
 }
 void setup() {
   lcd.init();
