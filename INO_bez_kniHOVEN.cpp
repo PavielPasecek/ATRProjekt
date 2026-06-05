@@ -355,11 +355,11 @@ void CtiMobil()
 
     if (command[0] == 'O') // odemkni
     {
-        Vodemkni()
+        Vodemkni();
     }
     else if (command[0] == 'L') // lock zamkny
     {
-        Zamnkni();
+        Zamkni();
     }
     else if (command[0] == 'Z') // zmena hesla
     {
